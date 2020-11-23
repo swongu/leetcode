@@ -4,85 +4,88 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 class Solution
 {
-   enum Color { RED, BLUE };
-
    static class Edges
    {
       final Map<Integer, List<Integer>> map = new HashMap<>();
 
-      Edges(int[][] input)
+      Edges(int n, int[][] redEdges, int[][] blueEdges)
       {
-         for (int[] edge: input)
+         for (int[] red: redEdges)
          {
-            map.computeIfAbsent(edge[0], i -> new ArrayList<>()).add(edge[1]);
+            map.computeIfAbsent(red[0], i -> new ArrayList<>()).add(red[1] + n);
+         }
+
+         for (int[] blue: blueEdges)
+         {
+            map.computeIfAbsent(blue[0] + n, i -> new ArrayList<>()).add(blue[1]);
          }
       }
    }
 
    public int[] shortestAlternatingPaths(int n, int[][] red_edges, int[][] blue_edges)
    {
-      class Node
-      {
-         final int i;
-         final Color from;
-         final int length;
+      // Build graph of combined red & blue edges (0..n-1 = red, n..2n-1 = blue)
+      Edges edges = new Edges(n, red_edges, blue_edges);
 
-         Node(int i, Color from, int length)
-         {
-            this.i = i;
-            this.from = from;
-            this.length = length;
-         }
+      // Lowest cost starting with red edge
+      int[] red = shortestPath(n, edges, n);
 
-         int getIndex()
-         {
-            return from == Color.RED ? i : i + n;
-         }
-      }
+      // Lowest cost starting with blue edge
+      int[] blue = shortestPath(n, edges, 0);
 
-      int[] visited = new int[n*2];
-      Arrays.fill(visited, Integer.MAX_VALUE);
-      Edges red = new Edges(red_edges);
-      Edges blue = new Edges(blue_edges);
-
-      Deque<Node> visit = new ArrayDeque<>();
-      visit.add(new Node(0, Color.RED, 0));
-      visit.add(new Node(0, Color.BLUE, 0));
-      while (!visit.isEmpty())
-      {
-         Node curr = visit.pop();
-         if (curr.length >= visited[curr.getIndex()]) continue;
-
-         visited[curr.getIndex()] = curr.length;
-         System.out.println("Visiting " + curr.i + ", " + curr.from + ", " + curr.length);
-
-         Edges color = (curr.from == Color.RED) ? blue : red;
-         Color nextFrom = (curr.from == Color.RED) ? Color.BLUE : Color.RED;
-
-         color.map.getOrDefault(curr.i, Collections.emptyList())
-            .stream()
-            .map(j -> new Node(j, nextFrom, curr.length + 1))
-            .filter(next -> visited[next.getIndex()] == Integer.MAX_VALUE)
-            .forEach(visit::add);
-      }
-
-      int[] result = new int[n];
       for (int i = 0; i < n; ++i)
       {
-         System.out.println("Comparing " + visited[i] + " and " + visited[i+n]);
-
-         result[i] = Math.min(visited[i], visited[i+n]);
-         if (result[i] == Integer.MAX_VALUE)
-         {
-            result[i] = -1;
-         }
+         red[i] = Math.min(red[i], blue[i]);
+         red[i] = (red[i] == Integer.MAX_VALUE) ? -1 : red[i];
       }
 
-      return result;
+      return red;
+   }
+
+   public int[] shortestPath(int n, Edges edges, int start)
+   {
+      // Build cost array
+      int[] cost = new int[n*2];
+      Arrays.fill(cost, Integer.MAX_VALUE);
+      cost[start] = 0;
+
+      Set<Integer> visited = new HashSet<>();
+      Deque<Integer> queue = new ArrayDeque<>();
+      queue.add(start);
+      while (!queue.isEmpty())
+      {
+         int i = queue.pop();
+         visited.add(i);
+
+         if (i >= n)
+         {
+            System.out.println("Visiting " + (i - n) + " with blue edge");
+         }
+         else
+         {
+            System.out.println("Visiting " + i + " with red edge");
+         }
+
+         edges.map.getOrDefault(i, Collections.emptyList())
+            .stream()
+            .peek(j -> cost[j] = Math.min(cost[j], cost[i] + 1))
+            .filter(j -> !visited.contains(j))
+            .forEach(queue::add);
+      }
+
+      for (int i = 0; i < n; ++i)
+      {
+         System.out.println("Comparing " + cost[i] + " and " + cost[i+n]);
+         cost[i] = Math.min(cost[i], cost[i+n]);
+      }
+
+      return Arrays.copyOf(cost, n);
    }
 }
