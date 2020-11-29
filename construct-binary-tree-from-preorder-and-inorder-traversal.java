@@ -1,97 +1,46 @@
-
-public class TreeNodeParent extends TreeNode
-{
-   TreeNodeParent parent;
-   TreeNodeParent(int val, TreeNodeParent parent)
-   {
-      super(val);
-      this.parent = parent;
-   }
-
-   TreeNodeParent add(int val, boolean left)
-   {
-      TreeNodeParent node = new TreeNodeParent(val, this);
-      if (left)
-      {
-         this.left = node;
-      }
-      else
-      {
-         this.right = node;
-      }
-
-      System.out.println("Added " + (left ? "left" : "right") + " node " + val + " for parent " + this.val);
-      return node;
-   }
-}
-
 class Solution
 {
+   int[] preorder;
+   int[] inorder;
+   Map<Integer, Integer> iIndex = new HashMap<>();
+
    public TreeNode buildTree(int[] preorder, int[] inorder)
    {
+      this.preorder = preorder;
+      this.inorder = inorder;
+
       if (preorder.length == 0)
       {
          return null;
       }
 
-      TreeNodeParent node = null;
-      Map<Integer, TreeNodeParent> map = new HashMap<>();
-      int p = 0;
-      int i = 0;
-      boolean left = true;
-
-      while (true)
-      {
-         while (true)
-         {
-            node = add(preorder[p], left, node);
-            map.put(node.val, node);
-            
-            boolean match = (preorder[p] == inorder[i]);
-            ++p; if (p == preorder.length) { return root(node); }
-
-            if (match) break;
-
-            // Next node is left, since we're in preorder position.
-            left = true;
-         }
-
-         // Next node is right, since we reached inorder position.
-         left = false;
-
-         while (true)
-         {
-            ++i; if (i == inorder.length) { return root(node); }
-
-            TreeNodeParent seen = map.get(inorder[i]);
-            if (seen == null) break;
-
-            // Next node is parent, since we're in inorder position.
-            node = seen;
-         }
-      }
+      IntStream.range(0, inorder.length).forEach(i -> iIndex.put(inorder[i], i));
+      return buildNode(0, 0, preorder.length);
    }
 
-   public TreeNodeParent add(int val, boolean left, TreeNodeParent parent)
+   // https://www.programcreek.com/2014/06/leetcode-construct-binary-tree-from-preorder-and-inorder-traversal-java/
+   //  in-order: [4 2 5] (1) [6 7 3 8]
+   // pre-order: (1) [2 4 5] [3 7 6 8]
+   // Example:
+   //        p = 0, i = 0, length = 8, pivot = 3
+   // Left:  p = 1, i = 0, length = 3
+   // Right: p = 4, i = 4, length = 4
+   public TreeNode buildNode(int p, int i, int length)
    {
-      if (parent == null)
+      if (length == 0)
       {
-         System.out.println("Added node " + val + " as root");
-         return new TreeNodeParent(val, null);
+         return null;
       }
-      else
-      {
-         return parent.add(val, left);
-      }
-   }
-
-   public TreeNodeParent root(TreeNodeParent node)
-   {
-      while (node.parent != null)
-      {
-         node = node.parent;
-      }
-
-      return node;
+         
+      int val = preorder[p];
+      int pivot = iIndex.get(val);
+      
+      int leftLength = pivot - i;
+      
+      return new TreeNode(
+         val,
+         buildNode(p + 1, i, leftLength),
+         buildNode(p + 1 + leftLength, pivot + 1, length - leftLength - 1) 
+      );
    }
 }
