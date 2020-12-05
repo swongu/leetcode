@@ -1,15 +1,14 @@
 class Solution
 {
     public String minWindow(String s, String t)
-    {        
-        char[] ss = new char[52];
-        char[] tt = dissect(t);
+    {
+        int[] tt = dissect(t);
         
-        int i = 0, j = -1, ws = -1, wt = s.length() + 1;
+        int i = 0, j = -1, ws = -1, wt = s.length() + 1, remain = t.length();
         while (true)
         {
-            // System.out.print("Window is " + s.substring(i, j+1));
-            if (isValidWindow(ss, tt))
+            // System.out.print("Remain = " + remain +", Window is " + s.substring(i, j+1));
+            if (remain == 0)
             {
                 // System.out.println("\tGood");
                 if (j - i < wt - ws)
@@ -18,8 +17,8 @@ class Solution
                     wt = j + 1;
                 }
                 
-                // Shrink valid windows
-                ss[getPosition(s.charAt(i++))]--;
+                // Shrink valid window
+                if (++tt[s.charAt(i++)] > 0) ++remain;
             }
             else
             {
@@ -30,29 +29,19 @@ class Solution
                     return ws < 0 ? "" : s.substring(ws, wt);
                 }
                 
-                ss[getPosition(s.charAt(++j))]++;
+                if (--tt[s.charAt(++j)] >= 0) --remain;
             }
         }
     }
     
-    public static int getPosition(char c)
+    public int[] dissect(String t)
     {
-        return (c <= 'Z') ? c - 'A' : c - 'a' + 26;
-    }
-    
-    public char[] dissect(String t)
-    {
-        char[] tt = new char[52];
+        int[] tt = new int[128];
         for (int i = 0; i < t.length(); ++i)
         {
-            tt[getPosition(t.charAt(i))]++;
+            tt[t.charAt(i)]++;
         }
-        
+
         return tt;
-    }
-    
-    public boolean isValidWindow(char[] ss, char[] tt)
-    {
-        return IntStream.range(0, ss.length).allMatch(i -> ss[i] >= tt[i]);
     }
 }
