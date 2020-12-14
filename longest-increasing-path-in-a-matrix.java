@@ -1,94 +1,53 @@
-class Solution 
+class Solution
 {
     int m, n;
-    int[][] matrix;
-    boolean[][] global;
-    int length = 0;
+    int[][] matrix, cache;
+    int globalMaxLength = 0;
     
-    public int longestIncreasingPath(int[][] matrix) 
+    public int longestIncreasingPath(int[][] matrix)
     {
         this.m = matrix.length;
         if (m == 0) return 0;
         this.n = matrix[0].length;
         this.matrix = matrix;
-        this.global = new boolean[m][n];
-        
-        for (int i = 0; i < m*n; ++i)
+
+        cache = new int[m][];
+        for (int i = 0; i < m; ++i)
         {
-            if (global[x(i)][y(i)]) continue;
-            
-            System.out.print("Starting search at (" + x(i) + ", " + y(i) + ")... ");
-            int desc = bfs(i, (l, r) -> matrix[x(l)][y(l)] > matrix[x(r)][y(r)]);
-            int asc  = bfs(i, (l, r) -> matrix[x(l)][y(l)] < matrix[x(r)][y(r)]);
-            System.out.print(desc + " + " + asc + " - 1 = " + (desc + asc - 1));
-            length = Math.max(length, desc + asc - 1);
+            cache[i] = new int[n];
         }
         
-        return length;
-    }
-    
-    public int x(int i)
-    {
-        return i / n;
-    }
-    
-    public int y(int i)
-    {
-        return i % n;
-    }
-    
-    public int i(int x, int y)
-    {
-        return x * n + y;
-    }
-    
-    public int bfs(int start, BiFunction<Integer, Integer, Boolean> function)
-    {
-        int maxDist = 0;
-        int node = 0;
-        
-        Map<Integer, Integer> path = new HashMap<>();
-        Queue<int[]> queue = new LinkedList<>();
-        queue.add(new int[]{ start, 1 });
-        while (!queue.isEmpty())
+        for (int i = 0; i < m; ++i)
         {
-            int[] n = queue.remove();
-            int i = n[0];
-            int dist = n[1];
-         
-            // System.out.println("..(" + x(i) + ", " + y(i) + "), dist = " + dist);
-            if (dist > maxDist)
+            for (int j = 0; j < n; ++j)
             {
-                maxDist = dist;
-                node = i;
+                longestIncreasingPath(i, j, Long.MAX_VALUE);
             }
-
-            neighbours(i)
-                .filter(j -> function.apply(j, i))
-                .peek(j -> path.put(j, i))
-                .forEach(j -> queue.add(new int[]{ j, dist + 1 }));
         }
         
-        int i = node;
-        while (path.containsKey(i) && path.containsKey(path.get(i)))
-        {
-            global[x(i)][y(i)] = true;
-            i = path.get(i);
-        }
-
-        return maxDist;
+        return globalMaxLength;
     }
     
-    public IntStream neighbours(int i)
+    public int longestIncreasingPath(int i, int j, long previous)
     {
-        return IntStream.concat(
-            IntStream.of(x(i) - 1, x(i) + 1)
-                .filter(x -> x >= 0 && x <= m - 1)
-                .map(x -> i(x, y(i))
-            ),
-            IntStream.of(y(i) - 1, y(i) + 1)
-                .filter(y -> y >= 0 && y <= n - 1)
-                .map(y -> i(x(i), y))
+        // Skip out of bounds
+        if (i < 0 || i >= m) return 0;
+        if (j < 0 || j >= n) return 0;
+        
+        // Skip cells that aren't descreasing from previous
+        int current = matrix[i][j];
+        if (current >= previous) return 0;
+        
+        int length = cache[i][j];
+        if (length > 0) return length;
+        
+        length = 1 + Math.max(
+            Math.max(longestIncreasingPath(i+1, j, current), longestIncreasingPath(i-1, j, current)),
+            Math.max(longestIncreasingPath(i, j+1, current), longestIncreasingPath(i, j-1, current))
         );
+        
+        cache[i][j] = length;
+        globalMaxLength = Math.max(globalMaxLength, length);
+        return length;
     }
 }
