@@ -1,121 +1,73 @@
-class Node
+class Solution
 {
-    int val;
-    List<Integer> indexes = new ArrayList<>();
-    Node left, right;
-    public Node(int val)
+    int n;
+    int[] nums;
+    int[] indexes;
+    int[] counts;
+    
+    public List<Integer> countSmaller(int[] nums)
     {
-        this.val = val;
-    }
-}
-
-class Solution 
-{
-    public List<Integer> countSmaller(int[] nums) 
-    {
-        int[] sorted = Arrays.copyOf(nums, nums.length);
-        Arrays.sort(sorted);
-        
-        Node bst = createTree(sorted, 0, sorted.length);
-        
-        // Add index to BST
-        for (int i = 0; i < nums.length; ++i)
-        {
-            add(i, nums[i], bst);
-        }
-        
-        // print(bst);
-        
-        // Descend BST
-        List<Integer> result = new ArrayList<>();
-        for (int i = 0; i < nums.length; ++i)
-        {
-            result.add(find(i, nums[i], bst));
-        }
-        
-        return result;
+        this.n = nums.length;
+        this.nums = nums;
+        this.indexes = new int[n];
+        this.counts = new int[n];
+        IntStream.range(0, n).forEach(i -> indexes[i] = i);
+        mergeSort(0, n);
+        return IntStream.of(counts).boxed().collect(Collectors.toList());
     }
     
-    public Node createTree(int[] array, int start, int end)
+    public void mergeSort(int start, int end)
     {
-        if (end - start <= 0)
-        {
-            return null;
-        }
-                
         int mid = start + (end - start) / 2;
-        int[] midRange = equalRange(array, mid);
+        if (end - start > 2)
+        {
+            mergeSort(start, mid);
+            mergeSort(mid, end);
+        }
+        
+        // Merge left and right arrays
+        int[] temp = new int[end - start];
+        int i = start;
+        int j = mid;
+        int k = 0;
+        int r = 0;
+        while (i < mid || j < end)
+        {
+            // if (i != mid) System.out.println("Left = " + indexes[i] + ", " + nums[indexes[i]]);
+            // if (j != end) System.out.println("Right = " + indexes[j] + ", " + nums[indexes[j]]);
+            if (i == mid || (j != end && nums[indexes[i]] > nums[indexes[j]]))
+            {
+                // Since right is bigger than left, every remaining item in left array should
+                // increase its count by one.
+                ++r;
 
-        Node node = new Node(array[mid]);
-        node.left = createTree(array, start, midRange[0]);
-        node.right = createTree(array, midRange[1], end);
-        return node;
-    }
-    
-    public int[] equalRange(int[] array, int start)
-    {
-        int left = start;
-        while (left >= 0 && array[left] == array[start])
-        {
-            --left;
+                temp[k++] = indexes[j++];
+            }
+            else
+            {
+                // Use the stored count value for this left array item (see above).
+                counts[indexes[i]] += r;
+
+                temp[k++] = indexes[i++];
+            }
         }
         
-        int right = start;
-        while (right < array.length && array[right] == array[start])
+        for (int l = 0; l < temp.length; ++l)
         {
-            ++right;
+            indexes[start + l] = temp[l];
         }
         
-        return new int[]{ left + 1, right };
+        // print(start, end);
     }
     
-    // public void print(Node node)
+    // public void print(int start, int end)
     // {
-    //     if (node == null) return;
-    //     System.out.println("At Node " + node.val + " with indexes " + node.indexes);
-    //     System.out.println("Left for " + node.val + ": ");
-    //     print(node.left);
-    //     System.out.println("Right for " + node.val + ": ");
-    //     print(node.right);
+    //     System.out.print("Start = " + start + ", End = " + end);
+    //     System.out.print(" [ ");
+    //     for (int i = start; i < end; ++i)
+    //     {
+    //         System.out.print(indexes[i] + " ");
+    //     }
+    //     System.out.println("]");
     // }
-    
-    public void add(int index, int value, Node tree)
-    {
-        if (value == tree.val)
-        {
-            tree.indexes.add(index);
-        }
-        else if (value < tree.val)
-        {
-            add(index, value, tree.left);
-        }
-        else
-        {
-            add(index, value, tree.right);
-        }
-    }
-    
-    public int find(int index, int value, Node tree)
-    {
-        if (tree == null) return 0;
-
-        int pos = Collections.binarySearch(tree.indexes, index);
-        int count = tree.indexes.size() - (-pos-1);
-        
-        int left = find(index, value, tree.left);
-        int current = (value > tree.val) ? count : 0;
-        int right = find(index, value, tree.right);
-        
-        // System.out.println("At node " + tree.val + " for value " + value + ": l = " + left + ", c = " + current + ", r = " + right);
-        // System.out.println("pos " + pos + ", count = " + count);
-        
-        if (value <= tree.val)
-        {
-            return left;
-        }
-        else
-        {
-            return left + current + right;
-        }
-    }
-} 
+}
