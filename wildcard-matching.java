@@ -1,101 +1,53 @@
 class Solution 
 {
-    String s, p;
+    boolean[][] dp;
     
     public boolean isMatch(String s, String p) 
     {
-        this.s = s;
-        this.p = p;
-        return bt(0, 0, fixedPatterns(p));
-    }
-    
-    public boolean bt(int si, int pi, int f)
-    {
-        // System.out.print("At si = " + si + ", pi = " + pi + ", f = " + f + "...");
-        if (reject(si, pi))
-        {
-            System.out.print("At si = " + si + ", pi = " + pi + ", f = " + f + "...");
-            System.out.println("reject");
-            return false;
-        }
+        this.dp = init(s.length(), p.length());
         
-        if (accept(si, pi))
+        for (int pi = p.length() - 1; pi >= 0; --pi)
         {
-            // System.out.print("At si = " + si + ", pi = " + pi + ", f = " + f + "...");
-            // System.out.println("accept");
-            return true;
-        }
-        
-        // System.out.println("sub-patterns");
-        switch (p.charAt(pi))
-        {
-            case '?':
+            for (int si = s.length(); si >= 0; --si)
             {
-                if (bt(si + 1, pi + 1, f)) return true;
-                break;
-            }
-            case '*':
-            {
-                int offset = 1;
-                while (pi + offset < p.length() && p.charAt(pi + offset) == '*')
+                switch (p.charAt(pi))
                 {
-                    ++offset;
+                    case '?':
+                        // Look down 1 and right 1, unless there are no more characters in S.
+                        dp[si][pi] = (si != s.length() && dp[si+1][pi+1]);
+                        break;
+                    case '*':
+                        // Look right 1 and sweep through all cells going down, looking for a true.
+                        dp[si][pi] = matchWildcard(si, pi, s.length());
+                        break;
+                    default:
+                        // Look down 1 and right 1 if characters match, unless there are no more characters in S.
+                        dp[si][pi] = (si != s.length() && s.charAt(si) == p.charAt(pi) && dp[si+1][pi+1]);
+                        break;
                 }
-                
-                for (int i = s.length() - f; i >= si; --i)
-                {
-                    if (bt(i, pi + offset, f)) return true;
-                }
-                break;
-            }
-            default:
-            {
-                if (bt(si + 1, pi + 1, f - 1)) return true;
-                break;
             }
         }
         
-        return false;
+        return dp[0][0];
     }
     
-    public boolean reject(int si, int pi)
+    public boolean matchWildcard(int si, int pi, int sLength)
     {
-        boolean noMoreLetters = (si > s.length() - 1);
-        boolean noMorePattern = (pi > p.length() - 1);
-        
-        if (noMoreLetters && noMorePattern) return false;
-        if (noMorePattern) return true;
-        
-        switch (p.charAt(pi))
+        return IntStream.rangeClosed(si, sLength).anyMatch(i -> dp[i][pi+1]);
+    }
+    
+    public static boolean[][] init(int m, int n)
+    {
+        boolean[][] dp = new boolean[m+1][];
+        for (int i = 0; i < m + 1; ++i)
         {
-            case '?': return noMoreLetters;
-            case '*': return false;
+            dp[i] = new boolean[n+1];
+            // dp[i][n] = true;
         }
         
-        return noMoreLetters || s.charAt(si) != p.charAt(pi);
-    }
-    
-    public boolean accept(int si, int pi)
-    {
-        boolean noMoreLetters = (si > s.length() - 1);
-        boolean noMorePattern = (pi > p.length() - 1);
-        boolean lastLetter  = (si == s.length() - 1);
-        boolean lastPattern = (pi == p.length() - 1);
+        dp[m][n] = true;
+        // Arrays.fill(dp[m], true);
         
-        if (noMoreLetters && noMorePattern) return true;
-        if (!lastPattern) return false;
-        
-        switch (p.charAt(pi))
-        {
-            case '?': return lastLetter;
-            case '*': return true;
-        }
-        
-        return lastLetter && s.charAt(si) == p.charAt(pi);
-    }
-    
-    public int fixedPatterns(String p)
-    {
-        return (int)p.chars().filter(i -> i != '?' && i != '*').count();
+        return dp;
     }
 }
